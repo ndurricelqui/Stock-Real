@@ -1,0 +1,25 @@
+{
+  "name": "Stock Real Pampero",
+  "short_name": "Stock Real",
+  "description": "Stock real por artículo/color/talle de Córdoba - Pampero",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0eeeb",
+  "theme_color": "#d97706",
+  "lang": "es",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
