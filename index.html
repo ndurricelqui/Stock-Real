@@ -601,30 +601,46 @@
   // GOOGLE SHEETS — PRECIOS (hoja aparte, columna A código / columna F precio)
   // ═══════════════════════════════════════════════════════════
   async function loadPriceData() {
+    // La hoja de precios tiene más de 130.000 filas (varios catálogos combinados).
+    // Pedirlas todas en un solo request (~17MB) tilda navegadores de celular, así que
+    // se piden en bloques chicos y se van acumulando.
+    const PAGE = 15000;
+    const byCodigo = {}, byDesc = {};
+    let totalRows = 0;
     try {
-      // La hoja de precios tiene más de 130.000 filas (varios catálogos combinados),
-      // por eso el rango tiene que cubrir todo el sheet y no cortar en 10000.
-      const url = `https://docs.google.com/spreadsheets/d/${PRICE_SHEETS_ID}/gviz/tq?gid=${PRICE_SHEETS_GID}&range=A1:F200000&headers=0`;
-      const data = await gvizJsonp(url, 30000);
-      const rows = (data.table && data.table.rows) ? data.table.rows : [];
-      const byCodigo = {}, byDesc = {};
-      rows.forEach(row => {
-        const c = row.c || [];
-        const cell = i => (c[i] && c[i].v !== undefined) ? c[i].v : '';
-        const codigo = cleanStockText(cell(0));
-        const desc = cleanStockText(cell(1));
-        if (norm(codigo).includes('articulo') || norm(desc) === 'articulo descripcion') return;
-        if (!codigo && !desc) return;
-        const precio = parseStockNumber(cell(5));
-        if (!precio) return;
-        if (codigo) byCodigo[codigo.toUpperCase()] = precio;
-        if (desc) byDesc[norm(desc)] = precio;
-      });
-      priceData = { byCodigo, byDesc };
+      for (let startRow = 1; startRow <= 200000; startRow += PAGE) {
+        const endRow = startRow + PAGE - 1;
+        const url = `https://docs.google.com/spreadsheets/d/${PRICE_SHEETS_ID}/gviz/tq?gid=${PRICE_SHEETS_GID}&range=A${startRow}:F${endRow}&headers=0`;
+        let data;
+        try {
+          data = await gvizJsonp(url, 20000);
+        } catch (e) {
+          log(`Precios bloque A${startRow}:F${endRow} falló (${e.message})`);
+          break;
+        }
+        const rows = (data.table && data.table.rows) ? data.table.rows : [];
+        rows.forEach(row => {
+          const c = row.c || [];
+          const cell = i => (c[i] && c[i].v !== undefined) ? c[i].v : '';
+          const codigo = cleanStockText(cell(0));
+          const desc = cleanStockText(cell(1));
+          if (norm(codigo).includes('articulo') || norm(desc) === 'articulo descripcion') return;
+          if (!codigo && !desc) return;
+          const precio = parseStockNumber(cell(5));
+          if (!precio) return;
+          if (codigo) byCodigo[codigo.toUpperCase()] = precio;
+          if (desc) byDesc[norm(desc)] = precio;
+        });
+        totalRows += rows.length;
+        log(`Precios bloque A${startRow}:F${endRow} => ${rows.length} filas (acum ${totalRows})`);
+        priceData = { byCodigo, byDesc };
+        if (rows.length < PAGE) break;
+      }
       log(`✓ Precios: ${Object.keys(byCodigo).length} códigos / ${Object.keys(byDesc).length} descripciones cargadas`);
     } catch (e) {
       log(`Precios: falló la carga (${e.message})`);
-      priceData = {};
+    } finally {
+      priceData = { byCodigo, byDesc };
     }
   }
 
@@ -636,13 +652,17 @@
     document.getElementById('stockLoading').style.display = 'block';
     document.getElementById('stockContent').style.display = 'none';
     try {
-      await Promise.all([loadSheetData(), loadPriceData()]);
+      await loadSheetData();
       document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-AR');
       renderStock();
     } catch (e) {
       document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-AR');
       document.getElementById('stockLoading').innerHTML = `<span style="color:var(--danger)">Error stock: ${e.message}</span>`;
+      return;
     }
+    // Los precios se cargan aparte y no bloquean la aparición de los artículos:
+    // en celular la hoja de precios (bloques de a 15.000 filas) puede tardar más.
+    loadPriceData().then(() => renderStock());
   }
 
   // ═══════════════════════════════════════════════════════════
