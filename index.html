@@ -602,8 +602,10 @@
   // ═══════════════════════════════════════════════════════════
   async function loadPriceData() {
     try {
-      const url = `https://docs.google.com/spreadsheets/d/${PRICE_SHEETS_ID}/gviz/tq?gid=${PRICE_SHEETS_GID}&range=A1:F10000&headers=0`;
-      const data = await gvizJsonp(url);
+      // La hoja de precios tiene más de 130.000 filas (varios catálogos combinados),
+      // por eso el rango tiene que cubrir todo el sheet y no cortar en 10000.
+      const url = `https://docs.google.com/spreadsheets/d/${PRICE_SHEETS_ID}/gviz/tq?gid=${PRICE_SHEETS_GID}&range=A1:F200000&headers=0`;
+      const data = await gvizJsonp(url, 30000);
       const rows = (data.table && data.table.rows) ? data.table.rows : [];
       const byCodigo = {}, byDesc = {};
       rows.forEach(row => {
