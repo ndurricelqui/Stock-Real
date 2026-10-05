@@ -1,4 +1,4 @@
-const CACHE = 'stock-real-v1';
+const CACHE = 'stock-real-v2';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
