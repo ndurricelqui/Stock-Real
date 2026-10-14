@@ -896,7 +896,7 @@
       sum[r.color][t] = (sum[r.color][t] || 0) + r.stock;
     });
 
-    const totalStock = rows.reduce((s, r) => s + Math.max(0, r.stock), 0);
+    const totalStock = rows.reduce((s, r) => s + r.stock, 0);
     const sinStock = rows.filter(r => r.stock <= 0).length;
 
     const thTalles = talles.map(t => `<th style="text-align:center;min-width:52px">${t}</th>`).join('');
@@ -908,7 +908,7 @@
         if (v === null) return `<td style="text-align:center;color:var(--muted);font-family:var(--mono);font-size:.75rem">—</td>`;
         return `<td style="text-align:center">${stockBadge(v)}</td>`;
       }).join('');
-      const rowTotal = talles.reduce((s, t) => s + Math.max(0, (sum[color] && sum[color][t]) || 0), 0);
+      const rowTotal = talles.reduce((s, t) => s + ((sum[color] && sum[color][t]) || 0), 0);
       return `<tr>
         <td><span class="mono-val">${color}</span>${colorDesc ? `<small>${colorDesc}</small>` : ''}</td>
         ${cells}
@@ -917,7 +917,7 @@
     }).join('');
 
     const totalCells = talles.map(t => {
-      const total = colors.reduce((s, color) => s + Math.max(0, (sum[color] && sum[color][t]) || 0), 0);
+      const total = colors.reduce((s, color) => s + ((sum[color] && sum[color][t]) || 0), 0);
       return `<td style="text-align:center"><span style="font-family:var(--mono);font-size:.8rem;font-weight:700;color:var(--muted)">${Math.round(total) || '—'}</span></td>`;
     }).join('');
 
